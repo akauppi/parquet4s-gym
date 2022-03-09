@@ -10,6 +10,7 @@
 */
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
+//import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
 import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver._
 import com.github.mjakubowski84.parquet4s.{Path => ParquetPath, _}
 import com.typesafe.scalalogging.LazyLogging
@@ -41,6 +42,7 @@ object Main extends LazyLogging {
       val pp: ParquetPath = ParquetPath("./demo.parquet")
 
       val x: TypedSchemaDef[AB] = implicitly    // ok
+      val xx: ValueEncoder[AB] = implicitly     // ok
 
       // If there's no import of '[...].parquet4s.ParquetSchemaResolver._':
       //    "could not find implicit value for parameter e: com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef[Main.SampleWithEnum]"
@@ -51,9 +53,9 @@ object Main extends LazyLogging {
       //      and value charSchema in trait PrimitiveSchemaDefs of type com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef[Char]
       //      match expected type com.github.mjakubowski84.parquet4s.SchemaDef
       //    "
-      // ??
       //
-      val xx: TypedSchemaDef[SampleWithEnum] = implicitly
+      val y: TypedSchemaDef[SampleWithEnum] = implicitly
+      val yy: ParquetRecordEncoder[SampleWithEnum] = implicitly   // ok
 
       Source(bb)
         .runWith(
@@ -140,7 +142,7 @@ object Main extends LazyLogging {
   //
   //    [1]: https://github.com/mjakubowski84/parquet4s/blob/master/examples/src/main/scala/com/github/mjakubowski84/parquet4s/CustomType.scala
   //
-  implicit def enc[T <: EnumEntry](v: T): OptionalValueEncoder[T] =
+  implicit def enc[T <: EnumEntry]: ValueEncoder[T] =
     (data: T, _: ValueCodecConfiguration) => BinaryValue( data.entryName )
 
   implicit def schema[T <: EnumEntry]: TypedSchemaDef[T] =

@@ -1,4 +1,4 @@
-# Parquet-workout
+# Parquet4s-gym
 
 A repo to narrow down on some problems, using [parquet4s]() Scala library.
 
