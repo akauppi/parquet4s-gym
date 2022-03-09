@@ -8,4 +8,5 @@
 /data.parquet
 /demo.parquet
 
+/*.parquet
 /*.parquet.crc
