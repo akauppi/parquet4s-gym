@@ -1,0 +1,11 @@
+/.idea/
+
+/project/*/
+/**/target/
+/.bsp/
+  # something sbt builds
+
+/data.parquet
+/demo.parquet
+
+/*.parquet.crc
