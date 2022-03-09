@@ -1,7 +1,6 @@
 /.idea/
 
-/project/*/
-/**/target/
+target
 /.bsp/
   # something sbt builds
 
@@ -10,3 +9,8 @@
 
 /*.parquet
 /*.parquet.crc
+
+.vscode
+.metals
+.bloop
+
