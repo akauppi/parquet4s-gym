@@ -1,5 +1,24 @@
 # Problem #1
 
+---
+
+This gets solved by:
+
+```scala
+implicit def enc[T <: EnumEntry]: ValueEncoder[T] =
+    (data: T, _: ValueCodecConfiguration) => BinaryValue( data.entryName )
+
+implicit def schema[T <: EnumEntry]: TypedSchemaDef[T] =
+  SchemaDef.primitive(
+    PrimitiveType.PrimitiveTypeName.BINARY,
+    Some( LogicalTypeAnnotation.enumType() ),
+    required = true
+  )
+  .typed
+```
+
+---
+
 Having a case class that contains an enumeration field:
 
 ```
