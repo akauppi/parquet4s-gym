@@ -26,6 +26,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= commonDeps ++ Seq(
       enumeratum,
       akkaStream,
+      parquet4s,
       `parquet4s-akka`,
       hadoopClient
     )

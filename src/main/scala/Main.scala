@@ -10,8 +10,9 @@
 */
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
-//import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
-import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver._
+import org.apache.parquet.schema.LogicalTypeAnnotation
+import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
+//import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver._
 import com.github.mjakubowski84.parquet4s.{Path => ParquetPath, _}
 import com.typesafe.scalalogging.LazyLogging
 import enumeratum._
@@ -29,6 +30,28 @@ object Main extends LazyLogging {
   case class Sample(a: String, b: Int)
   case class SampleWithEnum(a: AB, b: Int)
 
+  /***
+  private val abPrim = SchemaDef.primitive(
+    PrimitiveType.PrimitiveTypeName.BINARY,
+    Some( LogicalTypeAnnotation.enumType() ),
+    required = true
+  )***/
+  private val u32Prim = SchemaDef.primitive(
+    PrimitiveType.PrimitiveTypeName.INT32,
+    Some( LogicalTypeAnnotation.intType(32,false) ),
+    required = true
+  )
+
+  private val abPrim: TypedSchemaDef[AB] = implicitly
+  //private val intPrim: TypedSchemaDef[Int] = implicitly
+
+  object SampleWithEnum {
+    implicit val schema: TypedSchemaDef[SampleWithEnum] = SchemaDef.group(
+      abPrim("a"),
+      u32Prim("b")
+    ).typed
+  }
+
   // Write out parquet
   //
   def main(arr: Array[String]): Unit = {
@@ -44,6 +67,10 @@ object Main extends LazyLogging {
       val x: TypedSchemaDef[AB] = implicitly    // ok
       val xx: ValueEncoder[AB] = implicitly     // ok
 
+      //val xxx: ParquetSchemaResolver[AB] = implicitly
+        // "Cannot write data of type Main.AB. Please check if there is implicit TypedSchemaDef available for each field and subfield of Main.AB."
+        //  ^-- why does this fail?
+
       // If there's no import of '[...].parquet4s.ParquetSchemaResolver._':
       //    "could not find implicit value for parameter e: com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef[Main.SampleWithEnum]"
       //
@@ -56,6 +83,7 @@ object Main extends LazyLogging {
       //
       val y: TypedSchemaDef[SampleWithEnum] = implicitly
       val yy: ParquetRecordEncoder[SampleWithEnum] = implicitly   // ok
+      val yyy: ParquetSchemaResolver[SampleWithEnum] = implicitly
 
       Source(bb)
         .runWith(
@@ -65,9 +93,9 @@ object Main extends LazyLogging {
         )
 
     } else if (true) {    // Template argument (works)
-      write[Sample](aa, 0)
+      write[SampleWithEnum](bb, 0)
 
-    } else if (false) {
+    } else if (true) {
 
       // Write with different type each cycle
       //
@@ -116,7 +144,7 @@ object Main extends LazyLogging {
     override val values = findValues
   }
 
-  /***
+  /*** skip
   // tbd. Make generic to 'T <: EnumEntry'
   //
   // Note: Sample shows 'OptionalValueEncoder' even when it's an enum-like type (with no case of missing a value). [1]
@@ -136,8 +164,6 @@ object Main extends LazyLogging {
       .typed
   ***/
 
-  // tbd. Make generic to 'T <: EnumEntry'
-  //
   // Note: Sample shows 'OptionalValueEncoder' even when it's an enum-like type (with no case of missing a value). [1]
   //
   //    [1]: https://github.com/mjakubowski84/parquet4s/blob/master/examples/src/main/scala/com/github/mjakubowski84/parquet4s/CustomType.scala
@@ -148,7 +174,7 @@ object Main extends LazyLogging {
   implicit def schema[T <: EnumEntry]: TypedSchemaDef[T] =
     SchemaDef.primitive(
       PrimitiveType.PrimitiveTypeName.BINARY,
-      Some( StringLogicalTypeAnnotation ),
+      Some( LogicalTypeAnnotation.enumType() ),
       required = true
     )
     .typed
