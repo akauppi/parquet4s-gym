@@ -17,4 +17,6 @@ object B {
   def gen(): B = {
     B( rAlpha.take(4) .mkString, LocalDateTime.now() )
   }
+
+  implicit val builder: SingleFileParquetSink.Builder[B] = ParquetStreams.toParquetSingleFile.of[B]
 }

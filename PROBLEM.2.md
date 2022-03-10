@@ -20,7 +20,7 @@ I am providing a function that accepts either, and checks that there are the imp
 
 ```
 def write[T : ParquetSchemaResolver : ParquetRecordEncoder](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
-    import as.dispatcher
+  import as.dispatcher
 
   Source(ts)
     .runWith(
@@ -48,14 +48,24 @@ Cannot write data of type Product with ParquetWritable[_ >: B with A <: Product 
 
 ![](.images/problem-2-ideshot.png)
 
-*Does that provide a clue..?*
-
 ## Analysis
 
 Having `Product` in the error message indicates that the type information gets too loose, somewhere.. I am not versed enough in the innards of Scala (and parquet4s) to know what's really going on...
 
-## Work-around??
+## Work-around effort "C"
 
+Making each case class provide a `SingleFileParquetSink.Builder` as a method (just to see if there's *any* way...):
 
+```
+val builder: SingleFileParquetSink.Builder[T] = ParquetStreams.toParquetSingleFile.of[T]
+```
+
+..and making the Main code use it, without a `def[T]` (that might erase types):
+
+![](.images/problem-2-no-workaround.png)
+
+Yet another compile error. Yet again, I don't understand the root cause...
+
+## Work-around effort "D"
 
 

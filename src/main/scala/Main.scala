@@ -8,18 +8,15 @@
 *     [sbt] > run
 *   <<
 */
+import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
-import org.apache.parquet.schema.LogicalTypeAnnotation
 import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
-//import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver._
+//import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
 import com.github.mjakubowski84.parquet4s.{Path => ParquetPath, _}
 import com.typesafe.scalalogging.LazyLogging
-import enumeratum._
 import org.apache.parquet.hadoop.ParquetFileWriter.Mode
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
-import org.apache.parquet.schema.LogicalTypeAnnotation.StringLogicalTypeAnnotation
-import org.apache.parquet.schema.PrimitiveType
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -74,27 +71,47 @@ object Main extends LazyLogging {
 
       Await.ready( Future.sequence(futs), Duration.Inf )  ***/
 
-    } else if (true) {   // try #3
+    } else if (false) {    // work-around "C"
 
-      val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map( ??? /*write3*/ )
-
-      Await.ready( Future.sequence(futs), Duration.Inf )
-
-    } else {    // work-around??????
+      /*
+      * Fails with compile error:
+      *   <<
+      *     type mismatch;
+      *      found   : akka.stream.scaladsl.Sink[(some other)<empty>._1,scala.concurrent.Future[akka.Done]]
+      *      required: akka.stream.Graph[akka.stream.SinkShape[Product with ParquetWritable[_ >: B with A <: Product with java.io.Serializable] with java.io.Serializable],?]
+      *                .write(pPath)
+      *   <<
+      */
       ??? /***
-      def f[T : ParquetSchemaResolver : ParquetRecordEncoder]( data: Seq[T], pPath: ParquetPath ): Sink[T,_] => {
-        data.head.builder
-        Source(data).runWith(data.head.builder.options(wo) .write(pPath) )
-      }
+      val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map{
+        case (data: Seq[ParquetWritable[_]], pPath) =>
+          val builder = data.head.builder
 
-      val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map(f)
-      ***/
+          Source(data)
+            .runWith(
+              builder
+                .options(wo)
+                .write(pPath)
+                  //
+                  // <<
+                  // <<
+            )
+            .map{ x =>
+              logger.debug("Done.");
+              x
+            }
+        ***/
+
+    } else if (true) {    // work-around "D"
+
+      val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map {
+        case (data: Seq[ParquetWritable[_]], pPath) => write2(data, pPath)
+      }
     }
   }
 
   def pp(id: String): ParquetPath = ParquetPath(s"./demo.${id}.parquet")
 
-  /*** disabled
   // Write with template argument
   //
   def write[T : ParquetSchemaResolver : ParquetRecordEncoder](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
@@ -112,44 +129,27 @@ object Main extends LazyLogging {
         logger.debug("Done.");
         x
       }
-  } ***/
+  }
 
-  /*** disabled
-  def write2[T <: ParquetWritable[T]](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
-    import as.dispatcher
+    def write2[T : ParquetSchemaResolver : ParquetRecordEncoder](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
+      import as.dispatcher
 
-    logger.debug(s"Writing... ${pPath.name}")
+      val builder: SingleFileParquetSink.Builder[T] = implicitly
 
-    Source(ts)
-      .runWith(
-        ParquetStreams.toParquetSingleFile.of[T]
-          .options(wo)
-          .write(pPath)
-      )
-      .map{ x =>
-        logger.debug("Done.");
-        x
-      }
-  } ***/
+      logger.debug(s"Writing... ${pPath.name}")
 
-  /***
-  def write3[T <: ParquetWritable[T]]( tt: Tuple2[Seq[T],ParquetPath] )(implicit as: ActorSystem): Future[_] = {
-    import as.dispatcher
-    val (ts,pPath) = tt
-
-    logger.debug(s"Writing... ${pPath.name}")
-
-    Source(ts)
-      .runWith(
-        ParquetStreams.toParquetSingleFile.of[T]
-          .options(wo)
-          .write(pPath)
-      )
-      .map{ x =>
-        logger.debug("Done.");
-        x
-      }
-  }***/
+      Source(ts)
+        .runWith(
+          //ParquetStreams.toParquetSingleFile.of[T]
+          builder
+            .options(wo)
+            .write(pPath)
+        )
+        .map{ x =>
+          logger.debug("Done.");
+          x
+        }
+    }
 
   val wo = ParquetWriter.Options(
     writeMode = Mode.OVERWRITE,

@@ -11,7 +11,6 @@ import com.github.mjakubowski84.parquet4s._
 abstract class ParquetWritable[T : ParquetSchemaResolver : ParquetRecordEncoder] {
   this: T =>
 
-  // plan C. Avoids template arguments, but at what cost.. :S  Almost the same as having a writer at each case class companion object.
-  //
+  // plan C
   val builder: SingleFileParquetSink.Builder[T] = ParquetStreams.toParquetSingleFile.of[T]
 }

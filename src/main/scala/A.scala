@@ -20,6 +20,5 @@ object A {
     A( vv(r.nextInt(vv.size)), r.nextInt(2000000) )
   }
 
-  // work-around?
-  //val builder: SingleFileParquetSink.Builder[A] = ParquetStreams.toParquetSingleFile.of[A]
+  implicit val builder: SingleFileParquetSink.Builder[A] = ParquetStreams.toParquetSingleFile.of[A]
 }
