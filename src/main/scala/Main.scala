@@ -8,10 +8,11 @@
 *     [sbt] > run
 *   <<
 */
-import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
+
 //import com.github.mjakubowski84.parquet4s.ParquetSchemaResolver.TypedSchemaDef
 import com.github.mjakubowski84.parquet4s.{Path => ParquetPath, _}
 import com.typesafe.scalalogging.LazyLogging
@@ -57,11 +58,12 @@ object Main extends LazyLogging {
         )
 
     } else if (false) {
-      ??? /***
+      /***
       // Write with different type each cycle
       //
       val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map{
-        case (data: Seq[ParquetWritable[_]], pPath) => write(data, pPath)
+        case (data, pPath) =>
+          write /*[ParquetWritable[_]]*/ (data, pPath)
             // Compilation error:
             //  <<
             //    Cannot write data of type Product with ParquetWritable[_ >: B with A <: Product
@@ -102,11 +104,27 @@ object Main extends LazyLogging {
             }
         ***/
 
-    } else if (true) {    // work-around "D"
+    } else if (false) {    // work-around "D"
 
+      ??? /***
       val futs: Seq[Future[_]] = Seq( (aa, pp("a")), (bb, pp("b")) ).map {
         case (data: Seq[ParquetWritable[_]], pPath) => write2(data, pPath)
-      }
+          //
+          // <<
+          //    Cannot write data of type Product with ParquetWritable[_ >: B with A <: Product with java.io.Serializable] with java.io.Serializable. Please check if there is implicit TypedSchemaDef available for each field and subfield of Product with ParquetWritable[_ >: B with A <: Product with java.io.Serializable] with java.io.Serializable.
+          // <<
+      }***/
+
+    } else if (true) {    // one more work-around
+
+      // Completely acceptable rework - my application doesn't require the map.
+      //
+      val futs: Seq[Future[_]] = Seq(
+        write( aa, pp("a") ),
+        write( bb, pp("b") )
+      )
+
+      Await.ready( Future.sequence(futs), Duration.Inf )  //***/
     }
   }
 
@@ -134,7 +152,7 @@ object Main extends LazyLogging {
     def write2[T : ParquetSchemaResolver : ParquetRecordEncoder](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
       import as.dispatcher
 
-      val builder: SingleFileParquetSink.Builder[T] = implicitly
+      val builder: SingleFileParquetSink.Builder[T] = ???   // implicitly
 
       logger.debug(s"Writing... ${pPath.name}")
 
@@ -151,35 +169,25 @@ object Main extends LazyLogging {
         }
     }
 
+  // !!! CHAMPION??? 🎖
+  //
+  /***
+  def write3[T : TypeTag](ts: Seq[T], pPath: ParquetPath)(implicit as: ActorSystem): Future[_] = {
+    typeOf[T] match {
+      case t if t =:= typeOf[A] =>
+        write(ts : Seq[A], pPath)
+
+      case t if t =:= typeOf[B] =>
+        write(ts, pPath)
+
+      case _ => ???
+        // ... I can make 50+ of these.
+    }
+  }
+  ***/
+
   val wo = ParquetWriter.Options(
     writeMode = Mode.OVERWRITE,
     compressionCodecName = CompressionCodecName.SNAPPY
   )
-
-  /*** disabled - automatic Enumeratum encoding
-  // An enum. To be written as a string.
-  //
-  sealed trait AB extends EnumEntry
-  object AB extends Enum[AB] {
-    case object A extends AB
-    case object B extends AB
-      //
-    override val values = findValues
-  }
-
-  // Note: Sample shows 'OptionalValueEncoder' even when it's an enum-like type (with no case of missing a value). [1]
-  //
-  //    [1]: https://github.com/mjakubowski84/parquet4s/blob/master/examples/src/main/scala/com/github/mjakubowski84/parquet4s/CustomType.scala
-  //
-  implicit def enc[T <: EnumEntry]: ValueEncoder[T] =
-    (data: T, _: ValueCodecConfiguration) => BinaryValue( data.entryName )
-
-  implicit def schema[T <: EnumEntry]: TypedSchemaDef[T] =
-    SchemaDef.primitive(
-      PrimitiveType.PrimitiveTypeName.BINARY,
-      Some( LogicalTypeAnnotation.enumType() ),
-      required = true
-    )
-    .typed
-  ***/
 }

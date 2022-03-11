@@ -8,7 +8,7 @@ import com.github.mjakubowski84.parquet4s.{ParquetStreams, SingleFileParquetSink
 import java.time.LocalDateTime
 import scala.util.Random
 
-case class B(a: String, b: LocalDateTime) extends ParquetWritable[B]
+case class B(a: String, b: LocalDateTime) extends ParquetWritable[B] //("b")
 
 object B {
   private

@@ -16,7 +16,7 @@ object Dependencies {
   val enumeratum = "com.beachape" %% "enumeratum" % "1.7.0"
 
   // Writing Parquet
-  val pqt4sVer = "2.2.0"
+  val pqt4sVer = "2.3.0"
   val parquet4s = "com.github.mjakubowski84" %% "parquet4s-core" % pqt4sVer
   val `parquet4s-akka` = "com.github.mjakubowski84" %% "parquet4s-akka" % pqt4sVer
   val hadoopClient = "org.apache.hadoop" % "hadoop-client" % "3.3.2"

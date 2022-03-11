@@ -10,7 +10,9 @@ val defaults = Def.settings(
     "-encoding", "utf8",
     "-feature",
     "-unchecked",
-    "-language", "postfixOps"
+      //
+    "-language:implicitConversions",
+    "-Xfatal-warnings"
   )
 )
 
