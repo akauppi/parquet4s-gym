@@ -8,7 +8,7 @@ object Dependencies {
   val logbackClassic = "ch.qos.logback" % "logback-classic"  % "1.3.0-alpha14"
     // 1.2.11 would work nice, but why not get ready for 1.3 :)
 
-  val akkaVer = "2.6.18"
+  val akkaVer = "2.6.19"
   val akkaStream = "com.typesafe.akka" %% "akka-stream" % akkaVer
   val akkaStreamTestkit = "com.typesafe.akka" %% "akka-stream-testkit" % akkaVer
 
